@@ -1,7 +1,0 @@
-{
-  "const": 0.158483,
-  "gamma_TPU": 0.000408,
-  "beta_ret_sq_lag1": 0.231255,
-  "beta_EPU": 0.001493,
-  "gamma_p_value": 0.0064
-}
