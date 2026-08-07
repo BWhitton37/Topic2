@@ -2,28 +2,44 @@
 ECO 5012B — Coursework Project, Topic 2
 Section 3: Interactive Application and Research Extension
 
-Run with:  streamlit run st_app.py   (from this "app/" directory)
-
-NOTE: this sandbox has no internet access, so `streamlit`/`plotly` could
-not be pip-installed or executed here to test-run this file. It is written
-against the standard, stable Streamlit/Plotly APIs and uses the same fitted
-coefficients validated in analysis.py -- but please run it locally to
-confirm before submission, and let me know if anything errors.
+Run locally with:  streamlit run st_app.py
+Works whether this file sits at the project root or inside a subfolder
+(e.g. app/st_app.py) - it searches upward from its own location for a
+data/processed folder, so the repo layout doesn't matter.
 """
 
 import json
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
+
+def find_data_dir(start: Path) -> Path:
+    """Search this script's own folder, then each parent folder upward,
+    for a data/processed directory - works regardless of whether the repo
+    is laid out flat (data/ next to this file) or nested (data/ one level
+    up, this file inside an app/ subfolder)."""
+    for folder in [start] + list(start.parents):
+        candidate = folder / "data" / "processed"
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"Could not find a data/processed folder searching upward from {start}. "
+        f"Make sure the data/ folder was uploaded to the repo."
+    )
+
+
+DATA_DIR = find_data_dir(Path(__file__).resolve().parent)
+
 st.set_page_config(page_title="Trade Tension & Market Volatility", layout="wide")
 
-# --- Load fitted model + historical data (produced by ../code/analysis.py) ---
-with open("../data/processed/model_coefficients.json") as f:
+# --- Load fitted model + historical data (produced by code/analysis.py) ---
+with open(DATA_DIR / "model_coefficients.json") as f:
     coefs = json.load(f)
 
-hist = pd.read_csv("../data/processed/trade_tension_data.csv", parse_dates=["Time"])
+hist = pd.read_csv(DATA_DIR / "trade_tension_data.csv", parse_dates=["Time"])
 
 st.title("Trade Tensions and Financial Market Volatility")
 st.caption(
