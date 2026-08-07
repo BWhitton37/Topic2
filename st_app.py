@@ -3,9 +3,9 @@ ECO 5012B — Coursework Project, Topic 2
 Section 3: Interactive Application and Research Extension
 
 Run locally with:  streamlit run st_app.py
-Works whether this file sits at the project root or inside a subfolder
-(e.g. app/st_app.py) - it searches upward from its own location for a
-data/processed folder, so the repo layout doesn't matter.
+Locates its data files by searching for them by NAME, wherever they are
+in the repo - doesn't assume any particular folder structure, so it
+works regardless of how the repo ended up organised.
 """
 
 import json
@@ -16,30 +16,32 @@ import streamlit as st
 import plotly.graph_objects as go
 
 
-def find_data_dir(start: Path) -> Path:
-    """Search this script's own folder, then each parent folder upward,
-    for a data/processed directory - works regardless of whether the repo
-    is laid out flat (data/ next to this file) or nested (data/ one level
-    up, this file inside an app/ subfolder)."""
+def find_containing_dir(start: Path, filename: str) -> Path:
+    """Search this script's own folder and every parent folder upward
+    (and their full subtrees) for a specific filename, and return the
+    folder that contains it. Doesn't assume any particular folder name
+    or nesting depth - just finds the actual file."""
     for folder in [start] + list(start.parents):
-        candidate = folder / "data" / "processed"
-        if candidate.exists():
-            return candidate
+        matches = list(folder.rglob(filename))
+        if matches:
+            return matches[0].parent
     raise FileNotFoundError(
-        f"Could not find a data/processed folder searching upward from {start}. "
-        f"Make sure the data/ folder was uploaded to the repo."
+        f"Could not find '{filename}' anywhere under {start} or its parent "
+        f"folders. Make sure this file was uploaded to the repo."
     )
 
 
-DATA_DIR = find_data_dir(Path(__file__).resolve().parent)
+SCRIPT_DIR = Path(__file__).resolve().parent
+COEFS_DIR = find_containing_dir(SCRIPT_DIR, "model_coefficients.json")
+DATA_CSV_DIR = find_containing_dir(SCRIPT_DIR, "trade_tension_data.csv")
 
 st.set_page_config(page_title="Trade Tension & Market Volatility", layout="wide")
 
 # --- Load fitted model + historical data (produced by code/analysis.py) ---
-with open(DATA_DIR / "model_coefficients.json") as f:
+with open(COEFS_DIR / "model_coefficients.json") as f:
     coefs = json.load(f)
 
-hist = pd.read_csv(DATA_DIR / "trade_tension_data.csv", parse_dates=["Time"])
+hist = pd.read_csv(DATA_CSV_DIR / "trade_tension_data.csv", parse_dates=["Time"])
 
 st.title("Trade Tensions and Financial Market Volatility")
 st.caption(
